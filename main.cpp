@@ -72,6 +72,21 @@ bool readFileToVector(const char* pathName, vector<string> &data) {
     return isFileReadSuccessfully;
 }
 
+// Разбивает строку на подстроки и возвращает вектор
+vector<string> getSplitStringAsVector(std::string const &str, const char delim = ',') {
+    vector<string> words;
+    string word;
+    std::stringstream ss(str);
+
+    // Делим строки на токены по запятой
+    while (std::getline(ss, word, delim)) {
+        string retStr = trim(word);
+        words.push_back(retStr);
+    }
+
+    return words;
+}
+
 // Записывает в data данные из файла по принципу: массив строк <- массив слов.
 bool readFileToComplexData(const char* pathName, vector<vector<string>> &complexData) {
     vector<string> rows;
@@ -79,17 +94,7 @@ bool readFileToComplexData(const char* pathName, vector<vector<string>> &complex
 
     if (isFileReadSuccessfully && !rows.empty()) {
         for (const auto &row : rows) {
-            vector<string> words;
-            string word;
-            std::stringstream ss(row);
-
-            // Делим строки на токены по запятой
-            while (std::getline(ss, word, ',')) {
-                string retStr = trim(word);
-                words.push_back(retStr);
-            }
-
-            complexData.push_back(words);
+            complexData.push_back(getSplitStringAsVector(row, ','));
         }
     }
 
@@ -107,19 +112,20 @@ bool isNumeric(std::string const &str) {
     return !str.empty() && it == str.end();
 }
 
-std::string getUserString(const std::string& propose) {
+std::string getOneUserToken(const std::string& propose) {
     std::string userInput;
     printf("%s: ", propose.c_str());
     std::getline(std::cin, userInput);
 
-    return userInput;
+    // Извлечём первое слово из введенных
+    return getSplitStringAsVector(userInput, ' ')[0];
 }
 
 int getNumeric(const std::string& propose = "Введите цифры: ") {
     std::string userInput;
 
     while (true) {
-        std::string temp = getUserString(propose);
+        std::string temp = getOneUserToken(propose);
 
         if (isNumeric(temp)) {
             userInput = temp;
@@ -141,7 +147,7 @@ vector<string> getRecords(vector<string> const &dataFormat, int numberOfRecord =
         bool isValidInput = false;
 
         while (!isValidInput) {
-            std::string temp = getUserString("Введите " + dataFormat[i]);
+            std::string temp = getOneUserToken("Введите " + dataFormat[i]);
 
             if (!temp.length()) {
                 std::cout << "Попробуйте снова. Строка не должна быть пустой" << std::endl;
