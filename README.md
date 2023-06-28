@@ -16,7 +16,7 @@
 
 Использованы функции из [16_6_4](https://github.com/VladislavNovak/16_6_4):
 
-`trim`, `isNumeric`, `getUserString`, `getNumeric`, `getRecords`, `setComplexData`, `getSplitStringAsVector`
+`trim`, `isNumeric`, `getUserWord`, `getNumeric`, `getRecords`, `setComplexData`, `getSplitStringAsVector`
 
 Важно: решения для ввода кириллицы пока не нашел
 

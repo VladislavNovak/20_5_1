@@ -101,8 +101,6 @@ bool readFileToComplexData(const char* pathName, vector<vector<string>> &complex
     return isFileReadSuccessfully;
 }
 
-// ---
-
 bool isNumeric(std::string const &str) {
     auto it = std::find_if(
             str.begin(),
@@ -112,7 +110,7 @@ bool isNumeric(std::string const &str) {
     return !str.empty() && it == str.end();
 }
 
-std::string getOneUserToken(const std::string& propose) {
+std::string getUserWord(const std::string &propose) {
     std::string userInput;
     printf("%s: ", propose.c_str());
     std::getline(std::cin, userInput);
@@ -121,11 +119,11 @@ std::string getOneUserToken(const std::string& propose) {
     return getSplitStringAsVector(userInput, ' ')[0];
 }
 
-int getNumeric(const std::string& propose = "Введите цифры: ") {
+int getNumeric(const std::string &propose = "Введите цифры: ") {
     std::string userInput;
 
     while (true) {
-        std::string temp = getOneUserToken(propose);
+        std::string temp = getUserWord(propose);
 
         if (isNumeric(temp)) {
             userInput = temp;
@@ -147,7 +145,7 @@ vector<string> getRecords(vector<string> const &dataFormat, int numberOfRecord =
         bool isValidInput = false;
 
         while (!isValidInput) {
-            std::string temp = getOneUserToken("Введите " + dataFormat[i]);
+            std::string temp = getUserWord("Введите " + dataFormat[i]);
 
             if (!temp.length()) {
                 std::cout << "Попробуйте снова. Строка не должна быть пустой" << std::endl;
