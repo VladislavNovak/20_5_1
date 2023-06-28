@@ -1,5 +1,6 @@
 #include <windows.h>
 #include <iostream>
+#include <algorithm> // find_if
 #include <fstream>
 #include <vector>
 #include <string>
@@ -9,11 +10,13 @@ using std::vector;
 using std::string;
 
 // Обрезаем с начала и с конца все НЕ символы
-std::string trim(std::string const &str, std::string const &whitespace=" \r\n\t\v\f") {
-    auto start = str.find_first_not_of(whitespace);
-    auto end = str.find_last_not_of(whitespace);
+string trim(std::string str, std::string const &whiteSpaces = " \r\n\t\v\f") {
+    auto start = str.find_first_not_of(whiteSpaces);
+    str.erase(0, start);
+    auto end = str.find_last_not_of(whiteSpaces);
+    str.erase(end + 1);
 
-    return str.substr(start, end - start + 1);
+    return str;
 }
 
 void printWarning(const char* currentPath) {
@@ -22,6 +25,8 @@ void printWarning(const char* currentPath) {
 }
 
 void printComplexData(std::ostream &out, vector<vector<string>> const &complexData) {
+    system("cls");
+    std::cout << "---------Читаем данные из файла-------------" << std::endl;
     for (auto &line : complexData) {
         for (int i = 0; i < line.size(); ++i) {
             out << line[i] << (i != line.size() - 1 ? " " : "");
@@ -36,7 +41,7 @@ void displayComplexDataToScreen(vector<vector<string>> const &complexData) {
 }
 
 void writeComplexDataToFile(const char* path, vector<vector<string>> const &complexData) {
-    std::ofstream file(path);
+    std::ofstream file(path, std::ios::app);
 
     // Печатаем в поток file
     printComplexData(file, complexData);
@@ -68,7 +73,7 @@ bool readFileToVector(const char* pathName, vector<string> &data) {
 }
 
 // Записывает в data данные из файла по принципу: массив строк <- массив слов.
-bool readFileToVectorOfVectors(const char* pathName, vector<vector<string>> &data) {
+bool readFileToComplexData(const char* pathName, vector<vector<string>> &complexData) {
     vector<string> rows;
     bool isFileReadSuccessfully = readFileToVector(pathName, rows);
 
@@ -84,11 +89,86 @@ bool readFileToVectorOfVectors(const char* pathName, vector<vector<string>> &dat
                 words.push_back(retStr);
             }
 
-            data.push_back(words);
+            complexData.push_back(words);
         }
     }
 
     return isFileReadSuccessfully;
+}
+
+// ---
+
+bool isNumeric(std::string const &str) {
+    auto it = std::find_if(
+            str.begin(),
+            str.end(),
+            [](char const &c) { return !std::isdigit(c); });
+
+    return !str.empty() && it == str.end();
+}
+
+std::string getUserString(const std::string& propose) {
+    std::string userInput;
+    printf("%s: ", propose.c_str());
+    std::getline(std::cin, userInput);
+
+    return userInput;
+}
+
+int getNumeric(const std::string& propose = "Введите цифры: ") {
+    std::string userInput;
+
+    while (true) {
+        std::string temp = getUserString(propose);
+
+        if (isNumeric(temp)) {
+            userInput = temp;
+            break;
+        }
+
+        std::cout << "Попробуйте снова. Это должно быть целое число" << std::endl;
+    }
+
+    return std::stoi(userInput);
+}
+
+vector<string> getRecords(vector<string> const &dataFormat, int numberOfRecord = 0) {
+    vector<string> records;
+    printf("-----Запись номер %i -----\n", numberOfRecord + 1);
+
+    for (int i = 0; i < dataFormat.size(); ++i) {
+        string currentRecord;
+        bool isValidInput = false;
+
+        while (!isValidInput) {
+            std::string temp = getUserString("Введите " + dataFormat[i]);
+
+            if (!temp.length()) {
+                std::cout << "Попробуйте снова. Строка не должна быть пустой" << std::endl;
+                continue;
+            }
+
+            if (i == 3 && !isNumeric(temp)) {
+                std::cout << "Попробуйте снова. Это должно быть целое число" << std::endl;
+                continue;
+            }
+
+            currentRecord = temp;
+            isValidInput = true;
+        }
+
+        records.push_back(currentRecord);
+    }
+
+    return records;
+}
+
+void setComplexData(vector<string> const &dataFormat, vector<vector<string>> &complexData) {
+    int userCount = getNumeric("Введите количество пользователей");
+
+    for (int i = 0; i < userCount; ++i) {
+        complexData.push_back(getRecords(dataFormat, i));
+    }
 }
 
 int main() {
@@ -96,25 +176,24 @@ int main() {
     SetConsoleOutputCP(65001);
 
     const char* path = R"(..\test.txt)";
-    vector<vector<string>> complexData = {
-            { "Tom", "Hanks", "35500", "10.11.2020" },
-            { "Rebecca", "Williams", "85000", "1.1.2021" },
-            { "Sally", "Field", "15600", "15.8.2021" },
-            { "Michael", "Humphreys", "29400", "23.5.2020" },
-            { "Michael2", "Humphreys2", "294002", "23.5.20202" },
-    };
+    vector<string> dataFormat = { "фамилию (латиницей)", "имя (латиницей)", "дату выдачи", "сумму" };
 
+    vector<vector<string>> complexData;
     vector<vector<string>> complexDataFromFile;
 
+    // Получаем от пользователя данные. Пока в оперативную память (complexData)
+    setComplexData(dataFormat, complexData);
+    // Записываем данные в файл
     writeComplexDataToFile(path, complexData);
 
-    bool isFileReadSuccessfully = readFileToVectorOfVectors(path, complexDataFromFile);
-
+    // Извлекаем данные из файла
+    bool isFileReadSuccessfully = readFileToComplexData(path, complexDataFromFile);
+    // Проверяем флаг о состоянии чтения
     if (!isFileReadSuccessfully) {
         printWarning(path);
         return 1;
     }
-
+    // Проверяем флаг о состоянии прочтенных данных. Что-то должно быть
     if (complexDataFromFile.empty()) {
         std::cout << "Проверьте файлы на корректность данных" << std::endl;
         return 1;
