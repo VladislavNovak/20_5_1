@@ -73,15 +73,20 @@ bool readFileToVector(const char* pathName, vector<string> &data) {
 }
 
 // Разбивает строку на подстроки и возвращает вектор
-vector<string> getSplitStringAsVector(std::string const &str, const char delim = ',') {
+vector<string> splitStringToParts(std::string const &str, const char delim = ',', bool isEmptyDenied = true) {
     vector<string> words;
     string word;
     std::stringstream ss(str);
 
     // Делим строки на токены по запятой
     while (std::getline(ss, word, delim)) {
-        string retStr = trim(word);
-        words.push_back(retStr);
+        string trimStr = trim(word);
+        // Не позволяет добавлять пустой элемент
+        if (trimStr.length() == 0 && isEmptyDenied) {
+            continue;
+        }
+
+        words.push_back(trimStr);
     }
 
     return words;
@@ -94,7 +99,7 @@ bool readFileToComplexData(const char* pathName, vector<vector<string>> &complex
 
     if (isFileReadSuccessfully && !rows.empty()) {
         for (const auto &row : rows) {
-            complexData.push_back(getSplitStringAsVector(row, ','));
+            complexData.push_back(splitStringToParts(row, ','));
         }
     }
 
@@ -110,13 +115,48 @@ bool isNumeric(std::string const &str) {
     return !str.empty() && it == str.end();
 }
 
+bool isDate(std::string const &str, std::string &cause) {
+    bool isValid = true;
+    vector<vector<int>> ranges = { { 1, 31 }, { 1, 12 }, { 1950, 2030 } };
+    vector<string> parts = splitStringToParts(str, '.', false);
+
+    if (parts.size() != 3) {
+        cause += "Формат ввода: ДД.ММ.ГГГГ\n";
+        isValid = false;
+    }
+
+    for (int i = 0; i < parts.size(); ++i) {
+        std::string current = parts[i];
+
+        if (!isNumeric(current)) {
+            char warning[100];
+            sprintf(warning, "%i часть (%s) не является цифрой\n", (i + 1), current.c_str());
+            cause += warning;
+            isValid = false;
+            continue;
+        }
+
+        int part = std::stoi(current);
+        auto range = ranges[i];
+
+        if (part < range[0] || part > range[1]) {
+            char warning[100];
+            sprintf(warning, "%i часть (%i) должна быть в диапазоне %i - %i\n", (i + 1), part, range[0], range[1]);
+            cause += warning;
+            isValid = false;
+        }
+    }
+
+    return isValid;
+}
+
 std::string getUserWord(const std::string &propose) {
     std::string userInput;
     printf("%s: ", propose.c_str());
     std::getline(std::cin, userInput);
 
     // Извлечём первое слово из введенных
-    return getSplitStringAsVector(userInput, ' ')[0];
+    return splitStringToParts(userInput, ' ')[0];
 }
 
 int getNumeric(const std::string &propose = "Введите цифры: ") {
@@ -152,6 +192,12 @@ vector<string> getRecords(vector<string> const &dataFormat, int numberOfRecord =
                 continue;
             }
 
+            string cause;
+            if (i == 2 && !isDate(temp, cause)) {
+                std::cout << cause << std::endl;
+                continue;
+            }
+
             if (i == 3 && !isNumeric(temp)) {
                 std::cout << "Попробуйте снова. Это должно быть целое число" << std::endl;
                 continue;
@@ -180,7 +226,7 @@ int main() {
     SetConsoleOutputCP(65001);
 
     const char* path = R"(..\test.txt)";
-    vector<string> dataFormat = { "фамилию (латиницей)", "имя (латиницей)", "дату выдачи", "сумму" };
+    vector<string> dataFormat = { "фамилию (латиницей)", "имя (латиницей)", "дату выдачи (ДД.ММ.ГГГГ)", "сумму (целое число)" };
 
     vector<vector<string>> complexData;
     vector<vector<string>> complexDataFromFile;
